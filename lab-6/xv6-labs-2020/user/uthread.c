@@ -10,15 +10,34 @@
 #define STACK_SIZE  8192
 #define MAX_THREAD  4
 
+int A[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+int B[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+int C[3][3];
 
+struct context {
+  uint64 ra;
+  uint64 sp;
+  uint64 s0;
+  uint64 s1;
+  uint64 s2;
+  uint64 s3;
+  uint64 s4;
+  uint64 s5;
+  uint64 s6;
+  uint64 s7;
+  uint64 s8;
+  uint64 s9;
+  uint64 s10;
+  uint64 s11;
+};
 struct thread {
   char       stack[STACK_SIZE]; /* the thread's stack */
   int        state;             /* FREE, RUNNING, RUNNABLE */
-
+  struct  context context;
 };
 struct thread all_thread[MAX_THREAD];
 struct thread *current_thread;
-extern void thread_switch(uint64, uint64);
+extern void thread_switch(struct context*, struct context*);
               
 void 
 thread_init(void)
@@ -51,7 +70,13 @@ thread_schedule(void)
   }
 
   if (next_thread == 0) {
-    printf("thread_schedule: no runnable threads\n");
+    for(int i = 0; i < 3; i++)
+    {
+      for(int j = 0; j < 3; j++){
+        printf("%d ", C[i][j]);
+      }
+      printf("\n");
+    }
     exit(-1);
   }
 
@@ -59,10 +84,7 @@ thread_schedule(void)
     next_thread->state = RUNNING;
     t = current_thread;
     current_thread = next_thread;
-    /* YOUR CODE HERE
-     * Invoke thread_switch to switch from t to next_thread:
-     * thread_switch(??, ??);
-     */
+    thread_switch(&t->context, &current_thread->context);
   } else
     next_thread = 0;
 }
@@ -77,6 +99,9 @@ thread_create(void (*func)())
   }
   t->state = RUNNABLE;
   // YOUR CODE HERE
+  memset(&t->context, 0, sizeof t->context);
+  t->context.ra = (uint64)func;
+  t->context.sp = (uint64)(t->stack + STACK_SIZE);
 }
 
 void 
@@ -98,8 +123,9 @@ thread_a(void)
   while(b_started == 0 || c_started == 0)
     thread_yield();
   
-  for (i = 0; i < 100; i++) {
-    printf("thread_a %d\n", i);
+  for (i = 0; i < 3; i++) {
+    C[0][a_n] = A[0][0] * B[0][a_n] + A[0][1] * B[1][a_n] + A[0][2] * B[2][a_n];
+    printf("thread_a: %d\n", C[0][a_n]);
     a_n += 1;
     thread_yield();
   }
@@ -118,8 +144,9 @@ thread_b(void)
   while(a_started == 0 || c_started == 0)
     thread_yield();
   
-  for (i = 0; i < 100; i++) {
-    printf("thread_b %d\n", i);
+  for (i = 0; i < 3; i++) {
+    C[1][b_n] = A[1][0] * B[0][b_n] + A[1][1] * B[1][b_n] + A[1][2] * B[2][b_n];
+    printf("thread_b: %d\n", C[1][b_n]);
     b_n += 1;
     thread_yield();
   }
@@ -138,8 +165,9 @@ thread_c(void)
   while(a_started == 0 || b_started == 0)
     thread_yield();
   
-  for (i = 0; i < 100; i++) {
-    printf("thread_c %d\n", i);
+  for (i = 0; i < 3; i++) {
+    C[2][c_n] = A[2][0] * B[0][c_n] + A[2][1] * B[1][c_n] + A[2][2] * B[2][c_n];
+    printf("thread_c: %d\n", C[2][c_n]);
     c_n += 1;
     thread_yield();
   }
